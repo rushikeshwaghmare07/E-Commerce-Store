@@ -150,6 +150,7 @@ export const logout = async (req, res) => {
   }
 };
 
+// refresh the access token
 export const refreshToken = async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
@@ -160,8 +161,17 @@ export const refreshToken = async (req, res) => {
         message: "No refresh token provided.",
       });
     }
+    
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired refresh token.",
+      });
+    }
 
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
     const storedToken = await redis.get(`refresh_token:${decoded.userId}`);
 
     if (storedToken !== refreshToken) {
@@ -171,23 +181,25 @@ export const refreshToken = async (req, res) => {
       });
     }
 
+    // Generate new access token
     const accessToken = jwt.sign(
       { userId: decoded.userId },
       process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: "15m" }
     );
 
-    res.cookie("accessToken", accessToken),
-      {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 15 * 60 * 1000,
-      };
+    // Set the new access token in cookies
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
 
-    return res.status(201).json({
+    return res.status(200).json({
       success: true,
       message: "Token refreshed successfully.",
+      accessToken,
     });
   } catch (error) {
     console.log("Error in refresh token controller:", error.message);
