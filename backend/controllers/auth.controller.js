@@ -88,6 +88,48 @@ export const signup = async (req, res) => {
   }
 };
 
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required.",
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (user && (await user.comparePassword(password))) {
+      // Generate tokens and store refresh token in Redis
+      const { accessToken, refreshToken } = generateToken(user._id);
+      await storeRefreshToken(user._id, refreshToken);
+
+      // Set cookies
+      setCookie(res, accessToken, refreshToken);
+
+      return res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      });
+    } else {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid Credentials.",
+      });
+    }
+  } catch (error) {
+    console.log("Error in Login controller:", error.message);
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
 export const logout = async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
