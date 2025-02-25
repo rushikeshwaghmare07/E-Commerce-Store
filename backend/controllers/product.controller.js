@@ -1,5 +1,5 @@
-import Product from "../models/product.model";
-import cloudinary from "../utils/cloudinary";
+import Product from "../models/product.model.js";
+import cloudinary from "../utils/cloudinary.js";
 
 export const createProduct = async (req, res) => {
   try {
@@ -45,10 +45,36 @@ export const createProduct = async (req, res) => {
     });
   } catch (error) {
     console.log("Error in createProduct controller", error.message);
-    return res.status(500).json({ 
-      success: false, 
-      message: "Server error", 
-      error: error.message 
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const getAllProducts = async (req, res) => {
+  try {
+    const products = await Product.find({});
+
+    if (products.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No products available."
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "All products retrieved successfully.",
+      products,
+    })
+  } catch (error) {
+    console.log("Error in getAllProduct controller:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
     });
   }
 };
