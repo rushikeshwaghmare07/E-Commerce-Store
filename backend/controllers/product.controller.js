@@ -204,3 +204,38 @@ export const getRecommendedProducts = async (req, res) => {
     });
   }
 };
+
+export const getProductsByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+
+    if (!category) {
+      return res.status(400).json({
+        success: false,
+        message: "Category is required.",
+      });
+    }
+
+    const products = await Product.find({ category });
+
+    if (products.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No products found for the specified category.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Products retrieved successfully.",
+      products,
+    });
+  } catch (error) {
+    console.log("Error in getProductsByCategory controller:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
