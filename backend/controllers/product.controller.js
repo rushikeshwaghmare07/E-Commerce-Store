@@ -239,3 +239,41 @@ export const getProductsByCategory = async (req, res) => {
     });
   }
 };
+
+export const toggleFeaturedProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Product ID is required.",
+      });
+    }
+
+    const product = await Product.findById(id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found.",
+      });
+    }
+
+    product.isFeatured = !product.isFeatured;
+    const updatedProduct = await product.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Featured status toggled successfully.",
+      product: updatedProduct,
+    })
+  } catch (error) {
+    console.log("Error in toggleFeaturedProduct controller:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+}
