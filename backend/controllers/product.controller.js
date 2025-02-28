@@ -262,6 +262,7 @@ export const toggleFeaturedProduct = async (req, res) => {
 
     product.isFeatured = !product.isFeatured;
     const updatedProduct = await product.save();
+    await updateFeaturedProductsCache();
 
     return res.status(200).json({
       success: true,
@@ -275,5 +276,14 @@ export const toggleFeaturedProduct = async (req, res) => {
       message: "Internal Server Error",
       error: error.message,
     });
+  }
+}
+
+async function updateFeaturedProductsCache() {
+  try {
+    const featuredProducts = await Product.find({ isFeatured: true }).lean();
+    await redis.set("featured_products", JSON.stringify(featuredProducts), "EX", 3600);
+  } catch (error) {
+    console.log("Error in updateFeaturedProductsCache:", error.message);
   }
 }
